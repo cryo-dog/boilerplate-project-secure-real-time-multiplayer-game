@@ -92,13 +92,11 @@ io.on('connection', (socket) => {
 
   socket.on('joinRequest', (player) => {
     if (consoles) console.log("S: New player joined: ", socket.id, "\n Now connected players: ", group.getPlayerNrs());
-    if (consoles) console.log(`S: Adding new player ${socketID} to group`, group.getGroup());
     group.addPlayer(player);  
-    if (consoles) console.log(`S: Player ${player.playerNr} added. New group: `, group.getGroup());
     emitGroup(io);
   })
 
-  socket.emit('newCollectible', collectible, group);
+  socket.emit('newCollectible', collectible);
   if (consoles) console.log("S: Emitted new collectible: \n", collectible);
 
   
@@ -116,7 +114,6 @@ io.on('connection', (socket) => {
   socket.on('collision', (player, collectible) => {
     // Player gets the value
     group.increaseScore(player, collectible);
-    console.log("New group with score: ", group.getGroup());
     // Send stat update
     emitGroup(io);
     // Create and send new collectible

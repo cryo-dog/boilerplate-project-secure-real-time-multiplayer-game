@@ -44,7 +44,7 @@ const playerIcons = gameConfig.avatar.iconSrc.map( (src) => {
 let group = [];
 let player;
 let collectible = null;
-let playerRank = " ";
+let playerRank = "Rank: ";
 let playerScore = " ";
 
 // Client handling
@@ -107,8 +107,8 @@ socket.on("groupUpdate", (groupS) => {
       group[indexPlayer].updateStats({score: sPlayer.score});
     }
 
-    player.calculateRank(group);
-    playerRank = player.rank;
+    
+    playerRank = player.calculateRank(group);
     playerScore = player.score;
   })
 
@@ -130,7 +130,6 @@ socket.on("groupUpdate", (groupS) => {
 socket.on("newCollectible", (collectibleS) => {
   if (consoles) console.log("C: Collectible rec.: \n", collectibleS);
   collectible = new Collectible(collectibleS);
-
 })
 
 
@@ -233,7 +232,7 @@ function renderGame() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   // Draw UI
-  drawUI(ctx, `Rank: ${playerRank}, Points: ${playerScore}`);
+  drawUI(ctx, `${playerRank}, Points: ${playerScore}`);
   
   // Draw players
   for (let i = 0; i < group.length; i++) {

@@ -71,10 +71,6 @@ export default class Player {
     this.score = score;
   }
 
-  updateRank(rank) {
-    this.rank = rank;
-  }
-
   collision(item) {
     // Calculate the boundaries of the items
     const thisLeft = this.x;
@@ -107,6 +103,7 @@ export default class Player {
     // Return the position of the player
     arr.sort((a,b) => b.score - a.score);
     const rank = arr.findIndex(player => player.id == this.id) + 1;
-    this.rank = rank;
+    this.rank = `Rank: ${rank}/${arr.length}`;
+    return this.rank;
   }
 }
