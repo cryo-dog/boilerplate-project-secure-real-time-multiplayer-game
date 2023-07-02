@@ -34,16 +34,16 @@ export default class Player {
     for (const direction of directions) {
       switch (direction) {
         case "up":
-          this.y = Math.max(this.y - this.speed, infoFieldHeight);
+          this.y = Math.max(this.y - speed, infoFieldHeight);
           break;
         case "down":
-          this.y = Math.min(this.y + this.speed, infoFieldHeight + field.height - avatar.height);
+          this.y = Math.min(this.y + speed, infoFieldHeight + field.height - avatar.height);
           break;
         case "right":
-          this.x = Math.min(this.x + this.speed, field.width - avatar.width);
+          this.x = Math.min(this.x + speed, field.width - avatar.width);
           break;
         case "left":
-          this.x = Math.max(this.x - this.speed, padding);
+          this.x = Math.max(this.x - speed, padding);
           break;
         default:
           // Nothing
