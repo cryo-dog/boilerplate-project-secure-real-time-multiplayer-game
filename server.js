@@ -1,14 +1,45 @@
 require('dotenv').config();
+const http = require("http");
+const cors = require('cors');
 const express = require('express');
 const bodyParser = require('body-parser');
 const expect = require('chai');
-const socket = require('socket.io');
-const cors = require('cors');
-
+const socketio = require('socket.io');
+const helmet = require('helmet');
+const nocache = require('nocache');
 const fccTestingRoutes = require('./routes/fcctesting.js');
 const runner = require('./test-runner.js');
-
 const app = express();
+const server = http.createServer(app);
+const io = new socketio(server);
+const { v4: uuidv4 } = require('uuid'); // Creates unique ids via uuidv4();
+
+
+
+const Group = require('./helper/group');
+const group = new Group();
+
+
+// Game mechanic requirements
+import Player from "./public/Player.mjs";
+import gameConfig from './public/gameConfig';
+import Collectible from "./public/Collectible.mjs";
+import createRandomCollectible from "./helper/collectibles.js";
+
+const consoles = gameConfig.consoles; // Variable to print console logs while testing
+
+
+app.use(
+  helmet({
+    noSniff: true,
+    xssFilter: true,
+    hidePoweredBy: {
+      setTo: 'PHP 7.4.3',
+    },
+  })
+);
+
+app.use(nocache());
 
 app.use('/public', express.static(process.cwd() + '/public'));
 app.use('/assets', express.static(process.cwd() + '/assets'));
@@ -25,6 +56,8 @@ app.route('/')
     res.sendFile(process.cwd() + '/views/index.html');
   }); 
 
+
+
 //For FCC testing purposes
 fccTestingRoutes(app);
     
@@ -37,8 +70,80 @@ app.use(function(req, res, next) {
 
 const portNum = process.env.PORT || 3000;
 
+function emitGroup (io) {
+  io.emit("groupUpdate", group.getGroup()); // Broadcasts players object to all
+}
+
+function broadcastGroup (socket) {
+  // Broadcasts group only to all other players
+  io.broadcasts.emit("groupUpdate", group.getGroup());
+}
+
+// Initiate first collectible
+let collectible = createRandomCollectible();
+
+// Set up listeners
+
+// Listen for a new connection
+io.on('connection', (socket) => {
+  let socketID = socket.id;
+  
+  socket.emit('freeNr', group.nextFree());
+
+  socket.on('joinRequest', (player) => {
+    if (consoles) console.log("S: New player joined: ", socket.id, "\n Now connected players: ", group.getPlayerNrs());
+    if (consoles) console.log(`S: Adding new player ${socketID} to group`, group.getGroup());
+    group.addPlayer(player);  
+    if (consoles) console.log(`S: Player ${player.playerNr} added. New group: `, group.getGroup());
+    emitGroup(io);
+  })
+
+  socket.emit('newCollectible', collectible, group);
+  if (consoles) console.log("S: Emitted new collectible: \n", collectible);
+
+  
+  // Event listener for player movement
+  socket.on('playerMove', (player) => {
+    if (player){
+      group.updatePlayer(player);
+      emitGroup(io);
+    }
+  })
+
+
+
+  // Logic to react to collectible collisions
+  socket.on('collision', (player, collectible) => {
+    // Player gets the value
+    group.increaseScore(player, collectible);
+    console.log("New group with score: ", group.getGroup());
+    // Send stat update
+    emitGroup(io);
+    // Create and send new collectible
+    collectible = createRandomCollectible();
+    io.emit('newCollectible', collectible);
+  })
+  
+
+  // Remove player when disconnected
+  socket.on("disconnect", () => {
+    if (consoles) console.log(`S: Removing player: ${socketID} from group: `, group.getGroup());
+    group.removePlayer(socketID);
+    if (consoles) {console.log(">>>>S:\n  S: Client disconnected: ", socketID, 
+              "\n  Now connected: ", group.getPlayerNrs())};
+    emitGroup(io);
+    console.log("S: Player removed. Group: ", group.getGroup());
+  
+  })
+
+});
+
+
+
+
 // Set up server and tests
-const server = app.listen(portNum, () => {
+
+server.listen(portNum, () => {
   console.log(`Listening on port ${portNum}`);
   if (process.env.NODE_ENV==='test') {
     console.log('Running Tests...');
@@ -53,4 +158,4 @@ const server = app.listen(portNum, () => {
   }
 });
 
-module.exports = app; // For testing
+module.exports = server; // For testing
