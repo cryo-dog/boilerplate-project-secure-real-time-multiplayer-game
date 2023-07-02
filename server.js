@@ -28,7 +28,7 @@ import createRandomCollectible from "./helper/collectibles.js";
 
 const consoles = gameConfig.consoles; // Variable to print console logs while testing
 
-
+/*
 app.use(
   helmet({
     noSniff: true,
@@ -37,7 +37,21 @@ app.use(
       setTo: 'PHP 7.4.3',
     },
   })
+);*/
+
+app.use(
+  helmet.xssFilter(),
+  (req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    next();
+  },
+  helmet.hidePoweredBy({ setTo: 'PHP 7.4.3' })
 );
+
+app.use((req, res, next) => {
+  res.setHeader('X-Powered-By', 'PHP 7.4.3');
+  next();
+});
 
 app.use(nocache());
 
